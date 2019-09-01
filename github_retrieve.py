@@ -12,22 +12,25 @@ def single_line_in_file():
     """ 
     function helps looping once on each line to perform all operations 
     """
-    docs_comments = 0
-    repo_lines_of_codes = 0
+    count_all_lines = 0
     for_loops_list = []
     func_parameters = []
     no_of_variables = 0
+    docs_comments = 0
     repo_python_files = traverse_repos() # repo_python_files(list): all .py files in a repo
     for path in repo_python_files:
+        with open(path, 'r') as content_file:
+            content = content_file.read()
+            docs_comments += find_comments(content)
+            content_file.close()
         with open(path, 'r') as file_:
             lines = file_.readlines()
             for line in lines:
-                repo_lines_of_codes += 1
                 # call find_repo_imports
                 line_import = find_repo_imports(line) 
                 repo_imports_set.add(line_import)
                 # call countlines of code function
-                docs_comments += count_lines_of_code(line.strip())
+                count_all_lines += count_lines_of_code(line.strip())
                 # call find_for_loops
                 for_loops = find_for_loops(line)
                 if for_loops:
@@ -37,16 +40,21 @@ def single_line_in_file():
                     func_parameters.append(avarage_parameters(line))
                 no_of_variables += avarage_variables_per_line(line)
         file_.close()
-    repo_lines_of_codes = repo_lines_of_codes - docs_comments
-    nesting = nesting_depth(for_loops_list)
+    repo_lines_of_codes = count_all_lines - docs_comments
+    nesting = nesting_depth(for_loops_list) / len(for_loops_list)
     avarage_params = sum(func_parameters) / len(func_parameters)
     avarage_variables_repo = no_of_variables / repo_lines_of_codes
-    # print(for_loops_list)
-    # print('func_parameter_av',avarage_params)
-    print('no_of_variables', no_of_variables, ' repo_lines_of_codes:', repo_lines_of_codes)
-    print('avarage_variables_repo', avarage_variables_repo)
+    print('repo_lines_of_codes', repo_lines_of_codes)
+    print('docomments', docs_comments)
+    
+    print('func_parameter_av',avarage_params)
+    print('avarage_variables_repo ', avarage_variables_repo )
+    
+    print('nesting', nesting)
     
     return repo_lines_of_codes
+
+
 
 def generate_file_path(directory, filename=None):
     if filename:
@@ -75,20 +83,23 @@ def traverse_repos():
     except Exception as e:
         print("An error occured.", e)
 
+def find_comments(file_):
+    docstrings = re.findall(r'"""[\s\S]*?"""', file_)
+    comments = re.findall(r'^[^#]*', file_) # comments begginin with #
+    total_docstrings = 0
+    for item in docstrings:
+        total_docstrings += len(item.split('\n'))
+
+    return total_docstrings + len(comments)
+
 
 def count_lines_of_code(line):
-    docs_comments = 0
-    docstring = False
-    docstrings = []
+    line_code = 0
   
-    if line == "" \
-        or line.startswith("#"):
-        or docstring and not (line.startswith('"""') or line.startswith("'''"))\
-        or (line.startswith("'''") and line.endswith("'''") and len(line) >3)  \
-        or (line.startswith('"""') and line.endswith('"""') and len(line) >3) :
-            docs_comments += 1
-  
-    return docs_comments
+    if line:
+        line_code += 1
+
+    return line_code
 
 def find_repo_imports(line):
     """lines : lines from readlines() function"""
@@ -134,7 +145,6 @@ def find_for_loops(line):
     if line.strip().split(' ')[0] == 'for' \
         or('range' or 'xrange' or 'enumerate' or 'in') in line \
         and ':' in line:
-        print(len(line.split('for')[0]))
         return  1,len(line.split('for')[0])
     return 0
 def nesting_depth(for_loops_list):
@@ -181,6 +191,15 @@ def avarage_variables_per_line(line):
     if len(is_variable) == 2:
         return 1
     return 0
+
+def code_dulication_check(file_):
+    """[check the a file for code duplication]
+    
+    Arguments:
+        file_ {[str]} -- [content of the current file]
+    """
+    pass
+
  
 
 print('repo lines of code',single_line_in_file()) # make it return stuffs
