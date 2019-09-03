@@ -2,6 +2,7 @@
 import sys
 import os
 import re
+from itertools import islice
 from git import Repo
 from pathlib import Path
 # resech on reseting or freeing resources once a file closed-
@@ -16,16 +17,19 @@ def single_line_in_file():
     for_loops_list = []
     func_parameters = []
     no_of_variables = 0
-    docs_comments = 0
+    docs_comments = []
+    single_line_comments = []
+
     repo_python_files = traverse_repos() # repo_python_files(list): all .py files in a repo
     for path in repo_python_files:
-        with open(path, 'r') as content_file:
-            content = content_file.read()
-            docs_comments += find_comments(content)
-            content_file.close()
         with open(path, 'r') as file_:
             lines = file_.readlines()
+            # call code duplication
+            code_duplication_check(lines, path)
             for line in lines:
+                if re.match(r'^#.+', line.strip()):
+                    single_line_comments.append(line.strip())
+                     # this makes it possible to campare later
                 # call find_repo_imports
                 line_import = find_repo_imports(line) 
                 repo_imports_set.add(line_import)
@@ -40,19 +44,23 @@ def single_line_in_file():
                     func_parameters.append(avarage_parameters(line))
                 no_of_variables += avarage_variables_per_line(line)
         file_.close()
-    repo_lines_of_codes = count_all_lines - docs_comments
-    nesting = nesting_depth(for_loops_list) / len(for_loops_list)
+        
+        with open(path, 'r') as content_file:
+            content = content_file.read()
+            docs_comments.extend(find_docstrings_and_comments(content, single_line_comments))
+        content_file.close()
+
+    repo_lines_of_codes = count_all_lines - len(docs_comments)
+    # nesting = nesting_depth(for_loops_list) / len(for_loops_list)
     avarage_params = sum(func_parameters) / len(func_parameters)
     avarage_variables_repo = no_of_variables / repo_lines_of_codes
-    print('repo_lines_of_codes', repo_lines_of_codes)
-    print('docomments', docs_comments)
-    
+    print('repo_lines_of_codes', repo_lines_of_codes)    
     print('func_parameter_av',avarage_params)
     print('avarage_variables_repo ', avarage_variables_repo )
     
-    print('nesting', nesting)
+    # # print('nesting', nesting)
     
-    return repo_lines_of_codes
+    # return repo_lines_of_codes
 
 
 
@@ -83,20 +91,15 @@ def traverse_repos():
     except Exception as e:
         print("An error occured.", e)
 
-def find_comments(file_):
+def find_docstrings_and_comments(file_, single_line_comments):
     docstrings = re.findall(r'"""[\s\S]*?"""', file_)
-    comments = re.findall(r'^[^#]*', file_) # comments begginin with #
-    total_docstrings = 0
-    for item in docstrings:
-        total_docstrings += len(item.split('\n'))
-
-    return total_docstrings + len(comments)
+    return [*docstrings, *single_line_comments]
 
 
 def count_lines_of_code(line):
     line_code = 0
   
-    if line:
+    if line.strip():
         line_code += 1
 
     return line_code
@@ -104,15 +107,15 @@ def count_lines_of_code(line):
 def find_repo_imports(line):
     """lines : lines from readlines() function"""
     line_import = ''
-    if line.startswith('import') \
-        or (line.startswith('from') and 'import' in line):
+    if line.strip().startswith('import') \
+        or (line.strip().startswith('from') and 'import' in line):
         if len(line.split(' ')[1].split('.')) == 1:
             line_import = line.split(' ')[1]
         else:
             line_import= line.split(' ')[1].split('.')[0]
         return line_import
 
-def find_external_packages(repo_imports_set):
+def find_external_packages(repo_imports_set): # note import bs4 external packAGES NOT  working
     """finds the external packages
        repo_imports_set(set): a set containing all imports in individual repo file
     """
@@ -147,6 +150,7 @@ def find_for_loops(line):
         and ':' in line:
         return  1,len(line.split('for')[0])
     return 0
+
 def nesting_depth(for_loops_list):
     """[summary]
     
@@ -192,17 +196,66 @@ def avarage_variables_per_line(line):
         return 1
     return 0
 
-def code_dulication_check(file_):
+def code_duplication_check(lines, path):
     """[check the a file for code duplication]
     
     Arguments:
         file_ {[str]} -- [content of the current file]
     """
-    pass
+    # get indexes of all '""""' 
 
+    with open(path, 'r') as infile:
+        content = infile.read()
+        infile.close()
+
+        lines = [
+            line.strip() for line in lines if len(line.strip())>0 and not re.match(r'^#.+', line.strip())]
+        print('lines lines.....', lines)
+        docstrings_remove = ''
+        # get indexes of all '"""'
+        idx = [i for i,v in enumerate(lines) if v in ([ '"""'] or "'''")]
+        for i in range(len(idx)): 
+            if i%2==0 and len(idx) > 2:
+                idx[i] = idx[i]+1
+                docstrings_remove = [lines[idx[index]:idx[index+1]][0] for index in range(0, len(idx)-1,2)]
+            elif i%2==0 and len(idx) == 2:
+                docstrings_remove = [lines[idx[0]:idx[1]] for index in range(0, len(idx)-1,2)]
+            #continue
+        print('.....idx', idx)
+        # list of docstrings to be removed
+        #docstrings_remove = [lines[idx[index]:idx[index+1]][0] for index in range(0, len(idx)-1,2)]
+        lines = [
+            item.strip() for item in lines if item not in docstrings_remove[0] and not\
+                 (item.startswith('"""') or item.startswith("'''"))]
+        #print('docstringd to remove', docstrings_remove)
+        #docstrings_remove = [lines[idx[index]:idx[index+1]][0] for index in range(0, len(idx)-1,2)]
+        print('docstringd to remove', docstrings_remove)
+        file_str = ''
+        count = 0
+        line_length = 0
+        while line_length <= len(lines)-1:
+            if count < 4:    
+                file_str += lines[line_length]
+                count += 1
+            elif count == 4:
+                file_str += '<~>'
+                count = 0
+
+            line_length += 1
+        file_list = file_str.split('<~>')
+        file_list[:] = [s for s in file_list if len(s.strip())>0]
+        duplicates = len(file_list) - len(set(file_list))
+
+        print('dublicates.......', lines)
+    
  
 
-print('repo lines of code',single_line_in_file()) # make it return stuffs
+
+        
+
+
+
+single_line_in_file() # make it return stuffs
 print(find_external_packages(repo_imports_set), 'yes')
 #print(';;;;;>>>>>',repo_imports_set)
 #print(external_libs('k'))
