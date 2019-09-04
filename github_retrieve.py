@@ -6,71 +6,8 @@ from itertools import islice
 from git import Repo
 from pathlib import Path
 from url_read import urls_reader
-# research on reseting or freeing resources once a file closed-
-result = []
+from duplication import code_duplication_check
 
-
-
-def single_line_in_file():
-    """ 
-    function helps looping once on each line to perform all operations 
-    """
-    count_all_lines = 0
-    for_loops_list = []
-    func_parameters = []
-    no_of_variables = set()
-    docs_comments = []
-    single_line_comments = []
-    code_duplication = 0
-    all_repos_result = []
-    repo_imports_set = set() # imports for the entire repo
-    current_repo = ''
-    for item in traverse_repos():
-        current_repo = item['repo_url']
-        for path in item['files']:
-            with open(path, 'r') as file_:
-                lines = file_.readlines()
-                # call code duplication
-                code_duplication  += code_duplication_check(lines)
-                for line in lines:
-                    if re.match(r'^#.+', line.strip()):
-                        single_line_comments.append(line.strip())
-                        # this makes it possible to campare later
-                    # call find_repo_imports
-                    line_import = find_repo_imports(line)
-        
-                    repo_imports_set.add(line_import)
-                    # call countlines of code function
-                    count_all_lines += count_lines_of_code(line.strip())
-                    # call find_for_loops
-                    for_loops = find_for_loops(line)
-                    if for_loops:
-                        for_loops_list.append(for_loops)
-                    function = avarage_parameters(line)
-                    if function:
-                        func_parameters.append(avarage_parameters(line))
-                    no_of_variables.add(avarage_variables_per_line(line))
-        
-            with open(path, 'r') as content_file:
-                content = content_file.read()
-                docs_comments.extend(find_docstrings_and_comments(content, single_line_comments))
-        external_packages = find_external_packages(repo_imports_set)
-        repo_lines_of_codes = count_all_lines - len(docs_comments)
-        avarage_variables_repo = (len(no_of_variables)-1) / repo_lines_of_codes
-        nesting = nesting_depth(for_loops_list) / len(for_loops_list)
-        avarage_params = sum(func_parameters) / len(func_parameters)
-        repo_result = {
-                    'repository_url': current_repo, 
-                    'number of lines': repo_lines_of_codes, 
-                    'libraries': external_packages,
-                    'nesting factor': nesting,
-                    'code duplication': code_duplication,
-                    'average parameters': avarage_params,
-                    'average variables': avarage_variables_repo
-                
-            }
-        result.append(repo_result)
-    
 
 def generate_file_path(directory, filename=None):
     if filename:
@@ -217,50 +154,4 @@ def avarage_variables_per_line(line):
         return is_variable[0]
     return None
 
-def code_duplication_check(lines):
-    """[check the a file for code duplication]
-    
-    Arguments:
-        file_ {[str]} -- [content of the current file]
-    """
-    # get indexes of all '""""' 
-    lines = [
-        line.strip() for line in lines if len(line.strip())>0 and not re.match(r'^#.+', line.strip())]
-    docstrings_remove_final = []
-    docstrings_remove = []
-    # get indexes of all '"""'
-    idx = [i for i,v in enumerate(lines) if v in ([ '"""'] or "'''")]
-    for i in range(len(idx)): 
-        if i%2==0 and len(idx) > 2:
-            idx[i] = idx[i]+1
-            docstrings_remove.extend([lines[idx[index]:idx[index+1]] for index in range(0, len(idx)-1,2)])
-        elif i%2==0 and len(idx) == 2:
-            docstrings_remove.extend([lines[idx[0]:idx[1]] for index in range(0, len(idx)-1,2)])
-    # list of docstrings to be removed
-    #docstrings_remove = [lines[idx[index]:idx[index+1]][0] for index in range(0, len(idx)-1,2)]
-    for item in docstrings_remove:
-        for docs in item:
-            docstrings_remove_final.append(docs) 
-    lines = [
-        item.strip() for item in lines if item not in docstrings_remove and not\
-                (item.startswith('"""') or item.startswith("'''"))]
-    file_str = ''
-    count = 0
-    line_length = 0
-    while line_length <= len(lines)-1:
-        if count < 4:    
-            file_str += lines[line_length]
-            count += 1
-        elif count == 4:
-            file_str += '<~>'
-            count = 0
 
-        line_length += 1
-
-    file_list = file_str.split('<~>')
-    file_list[:] = [s for s in file_list if len(s.strip())>0]
-    duplicates = len(file_list) - len(set(file_list))
-    return 2
-    
-single_line_in_file() # make it return stuffs
-print(result)
