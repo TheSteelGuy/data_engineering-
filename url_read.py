@@ -4,7 +4,7 @@ def urls_reader():
         del urls[0]
       
         clean = [url.strip() for url in urls]
-        return clean[:4]
+        return clean
 
 
         
