@@ -21,7 +21,7 @@ def perform_calculations():
     for_loops_list = []
     func_parameters = [] # function parameter checks list
     no_of_variables = set() # a set containing variables
-    docs_comments = []  # list of 
+    docs_comments = []  
     single_line_comments = []
     code_duplication = 0
     repo_imports_set = set() # imports for the entire repo
@@ -57,22 +57,23 @@ def perform_calculations():
                 docs_comments.extend(find_docstrings_and_comments(content, single_line_comments))
     
  
-    
-        external_packages = find_external_packages(repo_imports_set)
-        repo_lines_of_codes = count_all_lines - len(docs_comments)
-        avarage_variables_repo = (len(no_of_variables)-1) / repo_lines_of_codes
-        nesting = nesting_depth(for_loops_list) / len(for_loops_list)
-        avarage_params = sum(func_parameters) / len(func_parameters)
-        repo_result = {
-                    'repository_url': current_repo, 
-                    'number of lines': repo_lines_of_codes, 
-                    'libraries': external_packages,
-                    'nesting factor': nesting,
-                    'code duplication': code_duplication,
-                    'average parameters': avarage_params,
-                    'average variables': avarage_variables_repo
-                
-            }
-        result.append(repo_result)
+
+    external_packages = find_external_packages(repo_imports_set)
+    repo_lines_of_codes = count_all_lines - len(docs_comments)
+    avarage_variables_repo = (len(no_of_variables)-1) / repo_lines_of_codes
+    nesting = nesting_depth(for_loops_list) / len(for_loops_list)
+    avarage_params = sum(func_parameters) / len(func_parameters)
+    repo_result = {
+                'repository_url': current_repo, 
+                'number of lines': repo_lines_of_codes, 
+                'libraries': external_packages,
+                'nesting factor': nesting,
+                'code duplication': code_duplication,
+                'average parameters': avarage_params,
+                'average variables': avarage_variables_repo
+            
+        }
+    result.append(repo_result)
+
     return result
 print(perform_calculations()) # make it return stuffs

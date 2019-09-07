@@ -8,7 +8,6 @@ from pathlib import Path
 from url_read import urls_reader
 from duplication import code_duplication_check
 
-
 def generate_file_path(directory, filename=None):
     if filename:
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), directory,filename)
@@ -20,12 +19,13 @@ def generate_file_path(directory, filename=None):
 def traverse_repos():
     repo_paths = []
     try:
-        urls = urls_reader()
+        urls = ['https://github.com/bitly/data_hacks'] # urls_reader()
         for url in urls:
             repo_dir = url.split('/')[-1]
             repo_paths.append({'repo_path':generate_file_path(repo_dir),'url':url})
             try:
-                Repo.clone_from(url, repo_dir)
+                #Repo.clone_from(url, repo_dir)
+                pass
             except:
                 continue
         
@@ -44,8 +44,18 @@ def traverse_repos():
        
 
 def find_docstrings_and_comments(file_, single_line_comments):
-    docstrings = re.findall(r'"""[\s\S]*?"""', file_)
-    return [*docstrings, *single_line_comments]
+    double_quotes = re.findall(r'"""[\s\S]*?"""', file_)
+    single_quotes = re.findall(r"'''[\s\S]*?'''", file_)
+    docstrings = [*double_quotes, *single_quotes] # all the docs in the codes ''' or """ docs
+    docstrings = [s.split() for s in docstrings] # remove remove sapces
+    docstrings = [item for item in docstrings] # unpack the nested nature of docs string lists
+    final_docs = []
+    # having all docs in a single list as opposed to each on its list
+    for item in docstrings:
+        final_docs.extend(item)
+
+    non_codes = [*final_docs , *single_line_comments] #
+    return non_codes
 
 
 def count_lines_of_code(line):
@@ -153,5 +163,3 @@ def avarage_variables_per_line(line):
     if len(is_variable) == 2 and ('+=' or '-=' or '*' or '/' or '['or']') not in line.strip().split(' '):
         return is_variable[0]
     return None
-
-
