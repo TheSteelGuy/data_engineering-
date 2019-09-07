@@ -11,7 +11,7 @@ from github_retrieve import (
     find_external_packages,
     nesting_depth
 )
-def single_line_in_file():
+def perform_calculations():
     """ 
     function helps looping once on each line to perform all operations 
     """
@@ -51,10 +51,13 @@ def single_line_in_file():
                     if function:
                         func_parameters.append(avarage_parameters(line))
                     no_of_variables.add(avarage_variables_per_line(line))
-        
+
             with open(path, 'r') as content_file:
                 content = content_file.read()
                 docs_comments.extend(find_docstrings_and_comments(content, single_line_comments))
+    
+ 
+    
         external_packages = find_external_packages(repo_imports_set)
         repo_lines_of_codes = count_all_lines - len(docs_comments)
         avarage_variables_repo = (len(no_of_variables)-1) / repo_lines_of_codes
@@ -72,4 +75,4 @@ def single_line_in_file():
             }
         result.append(repo_result)
     return result
-print(single_line_in_file()) # make it return stuffs
+print(perform_calculations()) # make it return stuffs
