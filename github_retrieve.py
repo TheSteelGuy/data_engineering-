@@ -19,13 +19,12 @@ def generate_file_path(directory, filename=None):
 def traverse_repos():
     repo_paths = []
     try:
-        urls = ['https://github.com/bitly/data_hacks'] # urls_reader()
+        urls = urls_reader()
         for url in urls:
             repo_dir = url.split('/')[-1]
             repo_paths.append({'repo_path':generate_file_path(repo_dir),'url':url})
             try:
-                #Repo.clone_from(url, repo_dir)
-                pass
+                Repo.clone_from(url, repo_dir)
             except:
                 continue
         

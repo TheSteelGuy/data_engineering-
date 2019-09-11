@@ -18,6 +18,7 @@ def code_duplication_check(lines):
             docstrings_remove.extend([lines[idx[index]:idx[index+1]] for index in range(0, len(idx)-1,2)])
         elif i%2==0 and len(idx) == 2:
             docstrings_remove.extend([lines[idx[0]:idx[1]] for index in range(0, len(idx)-1,2)])
+
     # list of docstrings to be removed
     #docstrings_remove = [lines[idx[index]:idx[index+1]][0] for index in range(0, len(idx)-1,2)]
     for item in docstrings_remove:
@@ -26,20 +27,26 @@ def code_duplication_check(lines):
     lines = [
         item.strip() for item in lines if item not in docstrings_remove and not\
                 (item.startswith('"""') or item.startswith("'''"))]
-    file_str = ''
-    count = 0
-    line_length = 0
-    while line_length <= len(lines)-1:
-        if count < 4:    
-            file_str += lines[line_length]
-            count += 1
-        elif count == 4:
-            file_str += '<~>'
-            count = 0
+    line_string = ''
+    for line in lines:
+        line_string += ''.join(line.strip().split(' '))
+    # print(line_string)
 
-        line_length += 1
+    # print('lines', lines) 
+    # file_str = ''
+    # count = 0
+    # line_length = 0
+    # while line_length <= len(lines)-1:
+    #     if count < 4:    
+    #         file_str += lines[line_length]
+    #         count += 1
+    #     elif count == 4:
+    #         file_str += '<~>'
+    #         count = 0
 
-    file_list = file_str.split('<~>')
-    file_list[:] = [s for s in file_list if len(s.strip())>0]
-    duplicates = len(file_list) - len(set(file_list))
-    return duplicates
+    #     line_length += 1
+
+    # file_list = file_str.split('<~>')
+    # file_list[:] = [s for s in file_list if len(s.strip())>0]
+    # duplicates = len(file_list) - len(set(file_list))
+    return 1 #duplicates
